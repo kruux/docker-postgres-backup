@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Simple script to use for backing up a docker postgres database
+#
+# Restore with "cat DUMP_FILE.sql | docker exec -i CONTAINERNAME psql -U rymdklubben template1"
+# Please note that if the target db is not empty when restoring there could be duplicates
+# It should not happen but I cannot guarantee anything. So make sure the db is empty when restoring
+
+source logging.sh
+
+dump_file="dump_$(date "+%F_%H_%M").sql"
+dump_with_path="${BACKUP_DIR}/${dump_file}"
+
+mkdir -p ${BACKUP_DIR}
+pg_dumpall -h ${POSTGRES_NAME} -p ${POSTGRES_PORT} -U ${POSTGRES_USER} -w --clean > "${dump_with_path}"
+
+if [ $? != 0 ]
+then
+	log_err "Backup failed. Make sure all environment vars are set correctly and that the database is running."
+	exit 1
+fi
+
+chmod 600 ${dump_with_path}
+
+log "Backup created in ${BACKUP_DIR} with filename: ${dump_file}"
+
+exit 0
